@@ -16,15 +16,15 @@ By uploading a user-generated mod (script) for use with Tribal Wars, you grant I
 
 /*
  javascript:var UNITS_TO_SEND = {
-    1: '&axe=60&ram=4&spy=1',
-    2: '&axe=60&ram=7&spy=1',
+    1: '&axe=10&ram=8&spy=1&catapult=6',
+    2: '&axe=10&ram=8&spy=1&catapult=6',
     3: '&axe=60&ram=10&spy=1',
     4: '&axe=150&ram=15&spy=1',
     5: '&axe=150&ram=20&spy=1',
     6: '&axe=150&ram=25&spy=1',
     7: '&axe=250&ram=30&spy=1',
     8: '&axe=250&ram=38&spy=1',
-    9: '&axe=500&ram=46&spy=1',
+    9: '&axe=10&ram=8&spy=1&catapult=6',
  };$.getScript('https://twscripts.dev/scripts/clearBarbarianWalls.js');
 */
 
@@ -111,6 +111,7 @@ async function initClearBarbarianWalls(store) {
     const { MAX_BARBARIANS, MAX_FA_PAGES_TO_FETCH } = store;
 
     const ownVillages = await fetchAllPlayerVillagesByGroup(game_data.group_id);
+	const troopCounts = await fetchTroopsForCurrentGroup(game_data.group_id);
     const faURLs = await fetchFAPages(MAX_FA_PAGES_TO_FETCH);
 
     if (!faURLs || !faURLs.length) {
@@ -135,21 +136,25 @@ async function initClearBarbarianWalls(store) {
             let barbarians = getFABarbarians(faTableRows);
 
             barbarians = barbarians.map((barbarian) => {
-                const sourceVillage = getNearestSourceVillage(
-                    barbarian.coord,
-                    ownVillages
-                );
-
-                return {
-                    ...barbarian,
-                    sourceVillageId: sourceVillage ? sourceVillage.id : null,
-                    sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
-                    sourceVillageName: sourceVillage ? sourceVillage.name : '-',
-                    sourceVillageDistance: sourceVillage
-                        ? parseFloat(sourceVillage.distance).toFixed(2)
-                        : '-',
-                };
-            });
+			    const unitsToSend = calculateUnitsToSend(barbarian.wall);
+			
+			    const sourceVillage = getNearestSourceVillage(
+			        barbarian.coord,
+			        ownVillages,
+			        troopCounts,
+			        unitsToSend
+			    );
+			
+			    return {
+			        ...barbarian,
+			        sourceVillageId: sourceVillage ? sourceVillage.id : null,
+			        sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
+			        sourceVillageName: sourceVillage ? sourceVillage.name : '-',
+			        sourceVillageDistance: sourceVillage
+			            ? parseFloat(sourceVillage.distance).toFixed(2)
+			            : '-',
+			    };
+			});
 
             const content = prepareContent(barbarians, MAX_BARBARIANS);
             renderUI(content);
@@ -603,6 +608,79 @@ async function fetchAllPlayerVillagesByGroup(groupId) {
     }
 }
 
+// Helper: Fetch troop counts for current group
+async function fetchTroopsForCurrentGroup(groupId) {
+    const troopsForGroup = await jQuery
+        .get(
+            game_data.link_base_pure +
+                `overview_villages&mode=combined&group=${groupId}&page=-1`
+        )
+        .then((response) => {
+            const htmlDoc = jQuery.parseHTML(response);
+            const homeTroops = [];
+            const combinedTableRows = jQuery(htmlDoc).find(
+                '#combined_table tr.nowrap'
+            );
+            const combinedTableHead = jQuery(htmlDoc).find(
+                '#combined_table tr:eq(0) th'
+            );
+
+            const combinedTableHeader = [];
+
+            jQuery(combinedTableHead).each(function () {
+                const thImage = jQuery(this).find('img').attr('src');
+                if (thImage) {
+                    let thImageFilename = thImage.split('/').pop();
+                    thImageFilename = thImageFilename.replace('.webp', '');
+                    combinedTableHeader.push(thImageFilename);
+                } else {
+                    combinedTableHeader.push(null);
+                }
+            });
+
+            combinedTableRows.each(function () {
+                let rowTroops = {};
+
+                combinedTableHeader.forEach((tableHeader, index) => {
+                    if (tableHeader && tableHeader.includes('unit_')) {
+                        const villageId = jQuery(this)
+                            .find('td:eq(1) span.quickedit-vn')
+                            .attr('data-id');
+
+                        const unitType = tableHeader.replace('unit_', '');
+
+                        rowTroops = {
+                            ...rowTroops,
+                            villageId: parseInt(villageId, 10),
+                            [unitType]:
+                                parseInt(
+                                    jQuery(this)
+                                        .find(`td:eq(${index})`)
+                                        .text()
+                                        .replace(/\./g, '')
+                                        .trim(),
+                                    10
+                                ) || 0,
+                        };
+                    }
+                });
+
+                if (rowTroops.villageId) {
+                    homeTroops.push(rowTroops);
+                }
+            });
+
+            return homeTroops;
+        })
+        .catch((error) => {
+            UI.ErrorMessage('Error fetching troop counts!');
+            console.error(`${scriptInfo()} Error:`, error);
+            return [];
+        });
+
+    return troopsForGroup;
+}
+
 // Helper: Calculate distance between 2 coordinates
 function calculateDistance(from, to) {
     const [x1, y1] = from.split('|').map(Number);
@@ -612,14 +690,42 @@ function calculateDistance(from, to) {
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// Helper: Get nearest own village for target coord
-function getNearestSourceVillage(targetCoord, ownVillages) {
+// Helper: Parse units string like &axe=10&ram=8&spy=1&catapult=6
+function parseUnitsString(unitsString) {
+    const params = new URLSearchParams(unitsString.replace(/^&/, ''));
+
+    return {
+        axe: parseInt(params.get('axe') || 0, 10),
+        ram: parseInt(params.get('ram') || 0, 10),
+        catapult: parseInt(params.get('catapult') || 0, 10),
+        spy: parseInt(params.get('spy') || 0, 10),
+    };
+}
+
+// Helper: Get nearest own village for target coord that has enough troops
+function getNearestSourceVillage(targetCoord, ownVillages, troopCounts, unitsToSend) {
     if (!ownVillages || !ownVillages.length) return null;
+
+    const needed = parseUnitsString(unitsToSend);
 
     let bestVillage = null;
     let bestDistance = Infinity;
 
     ownVillages.forEach((village) => {
+        const villageTroops = troopCounts.find(
+            (troops) => troops.villageId === village.id
+        );
+
+        if (!villageTroops) return;
+
+        const hasEnoughUnits =
+            (villageTroops.axe || 0) >= needed.axe &&
+            (villageTroops.ram || 0) >= needed.ram &&
+            (villageTroops.catapult || 0) >= needed.catapult &&
+            (villageTroops.spy || 0) >= needed.spy;
+
+        if (!hasEnoughUnits) return;
+
         const dist = calculateDistance(village.coords, targetCoord);
 
         if (dist < bestDistance) {
@@ -752,13 +858,7 @@ function getFABarbarians(rows) {
 
 // Helper: Calculate units to send based on wall level
 function calculateUnitsToSend(wall) {
-    let wallToUnitAmounts = UNITS_TO_SEND;
-
-    if (wallToUnitAmounts[wall] !== undefined) {
-        return wallToUnitAmounts[wall];
-    } else {
-        return `&axe=500&ram=100&spy=1`;
-    }
+        return `&axe=10&ram=8&spy=1&catapult=6`;
 }
 
 // Helper: Make consecutive AJAX (GET) requests
