@@ -467,6 +467,7 @@ function buildBarbsTable(villages, maxBarbsToShow) {
             distance,
             sourceVillageId,
             sourceVillageCoord,
+			sourceVillageDistance,
         } = village;
 
         const unitsToSend = calculateUnitsToSend(wall);
@@ -514,7 +515,7 @@ function buildBarbsTable(villages, maxBarbsToShow) {
 					</a>
 				</td>
 				<td>
-					${distance}
+					${sourceVillageDistance}
 				</td>
 				<td>
 					${wall !== '?' ? wall : '<b style="color:red;">?</b>'}
@@ -829,16 +830,16 @@ function getFABarbarians(rows) {
         let reportTime = jQuery(row).find('td:eq(4)').text().trim();
         let type = jQuery(row).find('td:eq(1) img').attr('src');
 
-        const isGreenReportWithUnknownWall =
-            wall === '?' && type && type.includes('green.webp');
-
-        if (parseInt(wall, 10) > 0 || wall === '?') {
-            shouldAdd = true;
-            if (isGreenReportWithUnknownWall) {
-                // do not show green reports with unknown wall on the table
-                shouldAdd = false;
-            }
-        }
+        const isGreenReport = type && type.includes('green.webp');
+		const isRedReport = type && type.includes('red.webp');
+		
+		if (parseInt(wall, 10) > 0 || wall === '?') {
+		    shouldAdd = true;
+		
+		    if (isGreenReport || isRedReport) {
+		        shouldAdd = false;
+		    }
+		}
 
         if (shouldAdd && villageId && reportId) {
             barbarians.push({
