@@ -1,36 +1,20 @@
 /*
  * Script Name: Clear Barbarian Walls
- * Version: v1.6.1
- * Last Updated: 2025-08-15
+ * Version: v1.6.1-mod
+ * Last Updated: 2026-03-16
  * Author: RedAlert
  * Author URL: https://twscripts.dev/
  * Author Contact: redalert_tw (Discord)
- * Approved: N/A
- * Approved Date: 2021-04-21
- * Mod: JawJaw
+ * Mod: Custom source village + troop template settings
  */
 
 /* Copyright (c) RedAlert
 By uploading a user-generated mod (script) for use with Tribal Wars, you grant InnoGames a perpetual, irrevocable, worldwide, royalty-free, non-exclusive license to use, reproduce, distribute, publicly display, modify, and create derivative works of the mod. This license permits InnoGames to incorporate the mod into any aspect of the game and its related services, including promotional and commercial endeavors, without any requirement for compensation or attribution to you. InnoGames is entitled but not obligated to name you when exercising its rights. You represent and warrant that you have the legal right to grant this license and that the mod does not infringe upon any third-party rights. You are - with the exception of claims of infringement by third parties â€“ not liable for any usage of the mod by InnoGames. German law applies.
 */
 
-/*
- javascript:var UNITS_TO_SEND = {
-    1: '&axe=10&ram=8&spy=1&catapult=6',
-    2: '&axe=10&ram=8&spy=1&catapult=6',
-    3: '&axe=60&ram=10&spy=1',
-    4: '&axe=150&ram=15&spy=1',
-    5: '&axe=150&ram=20&spy=1',
-    6: '&axe=150&ram=25&spy=1',
-    7: '&axe=250&ram=30&spy=1',
-    8: '&axe=250&ram=38&spy=1',
-    9: '&axe=10&ram=8&spy=1&catapult=6',
- };$.getScript('https://twscripts.dev/scripts/clearBarbarianWalls.js');
-*/
-
 var scriptData = {
     name: 'Clear Barbarian Walls',
-    version: 'v1.6.0',
+    version: 'v1.6.1-mod',
     author: 'RedAlert',
     authorUrl: 'https://twscripts.dev/',
     helpLink:
@@ -38,32 +22,24 @@ var scriptData = {
 };
 
 // User Input
-if (typeof DEBUG !== 'boolean') DEBUG = false; // enable/disable debug mode
-if (typeof UNITS_TO_SEND === 'undefined')
-    UNITS_TO_SEND = {
-        1: '&axe=60&ram=4&spy=1',
-        2: '&axe=60&ram=7&spy=1',
-        3: '&axe=60&ram=10&spy=1',
-        4: '&axe=150&ram=15&spy=1',
-        5: '&axe=150&ram=20&spy=1',
-        6: '&axe=150&ram=25&spy=1',
-        7: '&axe=250&ram=30&spy=1',
-        8: '&axe=250&ram=38&spy=1',
-        9: '&axe=500&ram=46&spy=1',
-    };
+if (typeof DEBUG !== 'boolean') DEBUG = false;
 
 // Globals
-var ALLOWED_GAME_SCREENS = ['map']; // list of game screens where script can be executed
-var COORDS_REGEX = /[0-9]{1,3}\|[0-9]{1,3}/g; // regex for coordinates
+var ALLOWED_GAME_SCREENS = ['map'];
+var COORDS_REGEX = /[0-9]{1,3}\|[0-9]{1,3}/g;
 
 if (typeof TWMap === 'undefined') TWMap = {};
 if ('TWMap' in window) mapOverlay = TWMap;
 
 // Data Store Config
-var STORAGE_KEY = 'RA_CBW_STORE'; // key for sessionStorage
+var STORAGE_KEY = 'RA_CBW_STORE';
 var DEFAULT_STATE = {
     MAX_BARBARIANS: 100,
     MAX_FA_PAGES_TO_FETCH: 20,
+    AXE: 10,
+    RAM: 8,
+    CATAPULT: 6,
+    SPY: 1,
 };
 
 // Translations
@@ -96,10 +72,11 @@ var translations = {
         'Maximum villages to show on the table':
             'Maximum villages to show on the table',
         'Maximum FA Pages to fetch': 'Maximum FA Pages to fetch',
-        'Minimum Wall Level': 'Minimum Wall Level',
+        Axe: 'Axe',
+        Ram: 'Ram',
+        Catapult: 'Catapult',
+        Spy: 'Spy',
         'Settings saved!': 'Settings saved!',
-        'Include reports with partial losses':
-            'Include reports with partial losses',
     },
 };
 
@@ -108,10 +85,13 @@ initDebug();
 
 // Initialize script logic
 async function initClearBarbarianWalls(store) {
-    const { MAX_BARBARIANS, MAX_FA_PAGES_TO_FETCH } = store;
+    const {
+        MAX_BARBARIANS,
+        MAX_FA_PAGES_TO_FETCH,
+    } = store;
 
     const ownVillages = await fetchAllPlayerVillagesByGroup(game_data.group_id);
-	const troopCounts = await fetchTroopsForCurrentGroup(game_data.group_id);
+    const troopCounts = await fetchTroopsForCurrentGroup(game_data.group_id);
     const faURLs = await fetchFAPages(MAX_FA_PAGES_TO_FETCH);
 
     if (!faURLs || !faURLs.length) {
@@ -119,7 +99,6 @@ async function initClearBarbarianWalls(store) {
         return;
     }
 
-    // Show progress bar and notify user
     startProgressBar(faURLs.length);
     UI.SuccessMessage(tt('Fetching FA pages...'));
 
@@ -136,33 +115,31 @@ async function initClearBarbarianWalls(store) {
             let barbarians = getFABarbarians(faTableRows);
 
             barbarians = barbarians.map((barbarian) => {
-			    const unitsToSend = calculateUnitsToSend(barbarian.wall);
-			
-			    const sourceVillage = getNearestSourceVillage(
-			        barbarian.coord,
-			        ownVillages,
-			        troopCounts,
-			        unitsToSend
-			    );
-			
-			    return {
-			        ...barbarian,
-			        sourceVillageId: sourceVillage ? sourceVillage.id : null,
-			        sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
-			        sourceVillageName: sourceVillage ? sourceVillage.name : '-',
-			        sourceVillageDistance: sourceVillage
-			            ? parseFloat(sourceVillage.distance).toFixed(2)
-			            : '-',
-			    };
-			});
+                const unitsToSend = calculateUnitsToSend(store);
+
+                const sourceVillage = getNearestSourceVillage(
+                    barbarian.coord,
+                    ownVillages,
+                    troopCounts,
+                    unitsToSend
+                );
+
+                return {
+                    ...barbarian,
+                    sourceVillageId: sourceVillage ? sourceVillage.id : null,
+                    sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
+                    sourceVillageName: sourceVillage ? sourceVillage.name : '-',
+                    sourceVillageDistance: sourceVillage
+                        ? parseFloat(sourceVillage.distance).toFixed(2)
+                        : '-',
+                };
+            });
 
             const content = prepareContent(barbarians, MAX_BARBARIANS);
             renderUI(content);
             jQuery('#barbVillagesCount').text(barbarians.length);
 
             updateMap(barbarians);
-
-            // event handlers
             showSettingsPanel(store);
         },
         function (error) {
@@ -175,38 +152,37 @@ async function initClearBarbarianWalls(store) {
 // Update map to include barbarians
 function updateMap(barbarians) {
     const barbCoords = barbarians.map((barbarian) => barbarian.coord);
-    // Show wall level of barbarian villages on the Map
-    if (mapOverlay.mapHandler._spawnSector) {
-        //exists already, don't recreate
-    } else {
-        //doesn't exist yet
+
+    if (!mapOverlay || !mapOverlay.mapHandler) return;
+
+    if (!mapOverlay.mapHandler._spawnSector) {
         mapOverlay.mapHandler._spawnSector = mapOverlay.mapHandler.spawnSector;
     }
 
     TWMap.mapHandler.spawnSector = function (data, sector) {
-        // Override Map Sector Spawn
         mapOverlay.mapHandler._spawnSector(data, sector);
+
         var beginX = sector.x - data.x;
         var endX = beginX + mapOverlay.mapSubSectorSize;
         var beginY = sector.y - data.y;
         var endY = beginY + mapOverlay.mapSubSectorSize;
+
         for (var x in data.tiles) {
             x = parseInt(x, 10);
-            if (x < beginX || x >= endX) {
-                continue;
-            }
+            if (x < beginX || x >= endX) continue;
+
             for (var y in data.tiles[x]) {
                 y = parseInt(y, 10);
+                if (y < beginY || y >= endY) continue;
 
-                if (y < beginY || y >= endY) {
-                    continue;
-                }
                 var xCoord = data.x + x;
                 var yCoord = data.y + y;
                 var v = mapOverlay.villages[xCoord * 1000 + yCoord];
+
                 if (v) {
                     var vXY = '' + v.xy;
                     var vCoords = vXY.slice(0, 3) + '|' + vXY.slice(3, 6);
+
                     if (barbCoords.includes(vCoords)) {
                         const currentBarbarian = barbarians.find(
                             (obj) => obj.villageId == v.id
@@ -250,7 +226,8 @@ function updateMap(barbarians) {
 function prepareContent(villages, maxBarbsToShow) {
     if (villages.length) {
         const barbsTable = buildBarbsTable(villages, maxBarbsToShow);
-        var content = `
+
+        return `
 			<div>
 				<p>
 					<b><span id="barbVillagesCount"></span> ${tt(
@@ -265,8 +242,6 @@ function prepareContent(villages, maxBarbsToShow) {
 				${barbsTable}
 			</div>
 		`;
-
-        return content;
     } else {
         return `<b>${tt(
             'No barbarian villages found fitting the criteria!'
@@ -310,27 +285,18 @@ function renderUI(body) {
 			.ra-clear-barbs-walls-header h3 { margin: 0; padding: 0; line-height: 1; }
 			.ra-clear-barbs-walls-body p { font-size: 14px; }
             .ra-clear-barbs-walls-body label { display: block; font-weight: 600; margin-bottom: 6px; }
-            
-			/* Table Styling */
 			.ra-table-container { overflow-y: auto; overflow-x: auto; height: auto; max-height: 312px; border: 1px solid #bc6e1f; }
 			.ra-table th { font-size: 14px; white-space: nowrap; }
-			.ra-table th,
-            .ra-table td { padding: 3px; text-align: center; white-space: nowrap; }
+			.ra-table th, .ra-table td { padding: 3px; text-align: center; white-space: nowrap; }
             .ra-table td a { word-break: break-all; }
 			.ra-table a:focus { color: blue; }
 			.ra-table a.btn:focus { color: #fff; }
 			.ra-table tr:nth-of-type(2n) td { background-color: #f0e2be }
 			.ra-table tr:nth-of-type(2n+1) td { background-color: #fff5da; }
-
-			/* Popup */
-			.ra-popup-content { width: 360px; }
+			.ra-popup-content { width: 420px; }
 			.ra-popup-content * { box-sizing: border-box; }
 			.ra-popup-content input[type="text"] { padding: 3px; width: 100%; }
-
-			/* Helpers */
             .ra-mb15 { margin-bottom: 15px; }
-
-			/* Elements */
 			.already-sent-command { opacity: 0.6; }
         </style>
     `;
@@ -342,12 +308,19 @@ function renderUI(body) {
     }
 }
 
-// Action Handlers: Show Settings Panel
+// Settings
 function showSettingsPanel(store) {
     jQuery('#showSettingsPanel').off('click').on('click', function (e) {
         e.preventDefault();
 
-        const { MAX_BARBARIANS, MAX_FA_PAGES_TO_FETCH } = store;
+        const {
+            MAX_BARBARIANS,
+            MAX_FA_PAGES_TO_FETCH,
+            AXE,
+            RAM,
+            CATAPULT,
+            SPY,
+        } = store;
 
         const content = `
 			<div class="ra-popup-content">
@@ -358,7 +331,7 @@ function showSettingsPanel(store) {
 					<table class="ra-settings-table" width="100%">
 						<tbody>
 							<tr>
-								<td width="80%">
+								<td width="70%">
 									<label for="maxBarbVillages">
 										${tt('Maximum villages to show on the table')}
 									</label>
@@ -368,13 +341,45 @@ function showSettingsPanel(store) {
 								</td>
 							</tr>
 							<tr>
-								<td width="80%">
+								<td width="70%">
 									<label for="maxFApages">
 										${tt('Maximum FA Pages to fetch')}
 									</label>
 								</td>
 								<td width="30%">
 									<input type="text" name="max_fa_pages" id="maxFApages" value="${MAX_FA_PAGES_TO_FETCH}" />
+								</td>
+							</tr>
+							<tr>
+								<td width="70%">
+									<label for="unitAxe">${tt('Axe')}</label>
+								</td>
+								<td width="30%">
+									<input type="text" id="unitAxe" value="${AXE}" />
+								</td>
+							</tr>
+							<tr>
+								<td width="70%">
+									<label for="unitRam">${tt('Ram')}</label>
+								</td>
+								<td width="30%">
+									<input type="text" id="unitRam" value="${RAM}" />
+								</td>
+							</tr>
+							<tr>
+								<td width="70%">
+									<label for="unitCatapult">${tt('Catapult')}</label>
+								</td>
+								<td width="30%">
+									<input type="text" id="unitCatapult" value="${CATAPULT}" />
+								</td>
+							</tr>
+							<tr>
+								<td width="70%">
+									<label for="unitSpy">${tt('Spy')}</label>
+								</td>
+								<td width="30%">
+									<input type="text" id="unitSpy" value="${SPY}" />
 								</td>
 							</tr>
 						</tbody>
@@ -389,29 +394,26 @@ function showSettingsPanel(store) {
 		`;
 
         Dialog.show('SettingsPanel', content);
-
         saveSettings();
     });
 }
 
-// Action Handlers: Save Settings
 function saveSettings() {
     jQuery('#saveSettingsBtn').off('click').on('click', function (e) {
         e.preventDefault();
 
-        const maxBarbVillages = jQuery('#maxBarbVillages').val();
-        const maxFApages = jQuery('#maxFApages').val();
-
         const data = {
-            MAX_BARBARIANS: maxBarbVillages,
-            MAX_FA_PAGES_TO_FETCH: maxFApages,
+            MAX_BARBARIANS: sanitizeNumber(jQuery('#maxBarbVillages').val(), 100),
+            MAX_FA_PAGES_TO_FETCH: sanitizeNumber(jQuery('#maxFApages').val(), 20),
+            AXE: sanitizeNumber(jQuery('#unitAxe').val(), 10),
+            RAM: sanitizeNumber(jQuery('#unitRam').val(), 8),
+            CATAPULT: sanitizeNumber(jQuery('#unitCatapult').val(), 6),
+            SPY: sanitizeNumber(jQuery('#unitSpy').val(), 1),
         };
 
         writeStorage(data, readStorage(DEFAULT_STATE));
         UI.SuccessMessage(tt('Settings saved!'), 1000);
-
-        // Update UI to reflect new settings
-        initClearBarbarianWalls(data);
+        initClearBarbarianWalls(readStorage(DEFAULT_STATE));
     });
 }
 
@@ -423,40 +425,23 @@ function buildBarbsTable(villages, maxBarbsToShow) {
 		<table class="ra-table" width="100%">
 			<thead>
 				<tr>
-					<th>
-						#
-					</th>
-					<th>
-						${tt('Type')}
-					</th>
-					<th>
-						${tt('Barbarian')}
-					</th>
-					<th>
-						${tt('From')}
-					</th>
-					<th>
-						${tt('Report')}
-					</th>
-					<th>
-						${tt('Distance')}
-					</th>
-					<th>
-						${tt('Wall')}
-					</th>
-					<th>
-						${tt('Last Attack Time')}
-					</th>
-					<th>
-						${tt('Actions')}
-					</th>
+					<th>#</th>
+					<th>${tt('Type')}</th>
+					<th>${tt('Barbarian')}</th>
+					<th>${tt('From')}</th>
+					<th>${tt('Report')}</th>
+					<th>${tt('Distance')}</th>
+					<th>${tt('Wall')}</th>
+					<th>${tt('Last Attack Time')}</th>
+					<th>${tt('Actions')}</th>
 				</tr>
 			</thead>
 			<tbody>
 	`;
 
     villages.forEach((village, index) => {
-        index++; // update index so it starts at 1 instead of 0
+        index++;
+
         const {
             villageId,
             coord,
@@ -464,13 +449,11 @@ function buildBarbsTable(villages, maxBarbsToShow) {
             reportId,
             reportTime,
             type,
-            distance,
             sourceVillageId,
             sourceVillageCoord,
-			sourceVillageDistance,
+            sourceVillageDistance,
+            unitsToSend,
         } = village;
-
-        const unitsToSend = calculateUnitsToSend(wall);
 
         const villageUrl = `${game_data.link_base_pure}info_village&id=${villageId}`;
         const reportUrl = `${game_data.link_base_pure}report&mode=all&view=${reportId}`;
@@ -491,12 +474,8 @@ function buildBarbsTable(villages, maxBarbsToShow) {
 
         barbsTable += `
 			<tr>
-				<td>
-					${index}
-				</td>
-				<td>
-					<img src="${type}">
-				</td>
+				<td>${index}</td>
+				<td><img src="${type}"></td>
 				<td>
 					<a href="${villageUrl}" target="_blank" rel="noopener noreferrer">
 						${coord}
@@ -514,15 +493,9 @@ function buildBarbsTable(villages, maxBarbsToShow) {
 						<span class="icon header new_report"></span>
 					</a>
 				</td>
-				<td>
-					${sourceVillageDistance}
-				</td>
-				<td>
-					${wall !== '?' ? wall : '<b style="color:red;">?</b>'}
-				</td>
-				<td>
-					${reportTime}
-				</td>
+				<td>${sourceVillageDistance ?? '-'}</td>
+				<td>${wall !== '?' ? wall : '<b style="color:red;">?</b>'}</td>
+				<td>${reportTime}</td>
 				<td>
 					${
                         sourceVillageId
@@ -544,14 +517,13 @@ function buildBarbsTable(villages, maxBarbsToShow) {
     return barbsTable;
 }
 
-// Action Handler: Highlight Opened Commands
 function highlightOpenedCommands(element) {
     element.classList.add('btn-confirm-yes');
     element.classList.add('btn-already-sent');
     element.parentElement.parentElement.classList.add('already-sent-command');
 }
 
-// Helper: Fetch player villages by current group
+// Fetch villages in group
 async function fetchAllPlayerVillagesByGroup(groupId) {
     try {
         let fetchVillagesUrl = '';
@@ -609,7 +581,7 @@ async function fetchAllPlayerVillagesByGroup(groupId) {
     }
 }
 
-// Helper: Fetch troop counts for current group
+// Fetch troop counts
 async function fetchTroopsForCurrentGroup(groupId) {
     const troopsForGroup = await jQuery
         .get(
@@ -682,7 +654,7 @@ async function fetchTroopsForCurrentGroup(groupId) {
     return troopsForGroup;
 }
 
-// Helper: Calculate distance between 2 coordinates
+// Helper distance
 function calculateDistance(from, to) {
     const [x1, y1] = from.split('|').map(Number);
     const [x2, y2] = to.split('|').map(Number);
@@ -691,7 +663,6 @@ function calculateDistance(from, to) {
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// Helper: Parse units string like &axe=10&ram=8&spy=1&catapult=6
 function parseUnitsString(unitsString) {
     const params = new URLSearchParams(unitsString.replace(/^&/, ''));
 
@@ -703,7 +674,6 @@ function parseUnitsString(unitsString) {
     };
 }
 
-// Helper: Get nearest own village for target coord that has enough troops
 function getNearestSourceVillage(targetCoord, ownVillages, troopCounts, unitsToSend) {
     if (!ownVillages || !ownVillages.length) return null;
 
@@ -743,7 +713,7 @@ function getNearestSourceVillage(targetCoord, ownVillages, troopCounts, unitsToS
     return bestVillage;
 }
 
-// Helper: Get FA pages URLs for AJAX
+// Fetch FA pages
 async function fetchFAPages(maxFAPagesToFetch) {
     const faPageURLs = await jQuery
         .get(game_data.link_base_pure + 'am_farm')
@@ -756,7 +726,6 @@ async function fetchFAPages(maxFAPagesToFetch) {
                 game_data.link_base_pure +
                 `am_farm&ajax=page_entries&Farm_page=0&class=&extended=1`;
 
-            // Getting amount of LA pages
             const faPageURLs = [firstFApage];
             jQuery(plunderListNav).each(function (index) {
                 index++;
@@ -786,7 +755,6 @@ async function fetchFAPages(maxFAPagesToFetch) {
     return faPageURLs;
 }
 
-// Helper: Get FA table rows for all pages
 function getFATableRows(pages) {
     let barbariansText = '';
     pages.forEach((page) => {
@@ -795,7 +763,7 @@ function getFATableRows(pages) {
     return jQuery.parseHTML(barbariansText);
 }
 
-// Helper: Get barbarian villages with wall bigger then 0
+// Keep only orange/yellow reports
 function getFABarbarians(rows) {
     let barbarians = [];
 
@@ -831,15 +799,23 @@ function getFABarbarians(rows) {
         let type = jQuery(row).find('td:eq(1) img').attr('src');
 
         const isGreenReport = type && type.includes('green.webp');
-		const isRedReport = type && type.includes('red.webp');
-		
-		if (parseInt(wall, 10) > 0 || wall === '?') {
-		    shouldAdd = true;
-		
-		    if (isGreenReport || isRedReport) {
-		        shouldAdd = false;
-		    }
-		}
+        const isRedReport = type && type.includes('red.webp');
+        const isOrangeReport =
+            type &&
+            (
+                type.includes('yellow.webp') ||
+                type.includes('orange.webp') ||
+                type.includes('yellow.png') ||
+                type.includes('orange.png')
+            );
+
+        if (parseInt(wall, 10) > 0 || wall === '?') {
+            shouldAdd = true;
+
+            if (isGreenReport) shouldAdd = false;
+            if (isRedReport) shouldAdd = false;
+            if (!isOrangeReport) shouldAdd = false;
+        }
 
         if (shouldAdd && villageId && reportId) {
             barbarians.push({
@@ -857,22 +833,23 @@ function getFABarbarians(rows) {
     return barbarians;
 }
 
-// Helper: Calculate units to send based on wall level
-function calculateUnitsToSend(wall) {
-        return `&axe=10&ram=8&spy=1&catapult=6`;
+// Troop template from settings
+function calculateUnitsToSend(store) {
+    const axe = sanitizeNumber(store.AXE, 10);
+    const ram = sanitizeNumber(store.RAM, 8);
+    const catapult = sanitizeNumber(store.CATAPULT, 6);
+    const spy = sanitizeNumber(store.SPY, 1);
+
+    return `&axe=${axe}&ram=${ram}&catapult=${catapult}&spy=${spy}`;
 }
 
-// Helper: Make consecutive AJAX (GET) requests
-$.fetchAll = function (
-    urls, // array of URLs
-    onLoad, // called when any URL is loaded, params (index, data)
-    onDone, // called when all URLs successfully loaded, no params
-    onError // called when a URL load fails or if onLoad throws an exception, params (error)
-) {
+// AJAX fetchAll
+$.fetchAll = function (urls, onLoad, onDone, onError) {
     var numDone = 0;
     var lastRequestTime = 0;
-    var minWaitTime = 250; // ms between requests
+    var minWaitTime = 250;
     loadNext();
+
     function loadNext() {
         if (numDone == urls.length) {
             onDone();
@@ -886,6 +863,7 @@ $.fetchAll = function (
             setTimeout(loadNext, timeRemaining);
             return;
         }
+
         lastRequestTime = now;
         $.get(urls[numDone])
             .done((data) => {
@@ -903,7 +881,7 @@ $.fetchAll = function (
     }
 };
 
-// Helper: Progress bar UI
+// Progress bar
 function startProgressBar(total) {
     const width = jQuery('#contentContainer')[0].clientWidth;
     const preloaderContent = `
@@ -919,7 +897,6 @@ function startProgressBar(total) {
     $('#contentContainer').eq(0).prepend(preloaderContent);
 }
 
-// Helper: Updates progress bar
 function updateProgressBar(index, total) {
     jQuery('#progress').css('width', `${((index + 1) / total) * 100}%`);
     jQuery('.count').text(`${tt('Fetching')} ${index + 1}/${total}`);
@@ -929,16 +906,18 @@ function updateProgressBar(index, total) {
     }
 }
 
-// Helper: Read client-side storage
+// Storage helpers
 function readStorage(defaultState) {
     let storedState = sessionStorage.getItem(STORAGE_KEY);
     if (!storedState) return defaultState;
     if (typeof storedState === 'object') return defaultState;
     storedState = JSON.parse(storedState);
-    return storedState;
+    return {
+        ...defaultState,
+        ...storedState,
+    };
 }
 
-// Helper: Write into client-side storage
 function writeStorage(data, initialState) {
     const dataToBeSaved = {
         ...initialState,
@@ -947,17 +926,20 @@ function writeStorage(data, initialState) {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dataToBeSaved));
 }
 
-// Helper: Get parameter by name
+function sanitizeNumber(value, fallback) {
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+// Utils
 function getParameterByName(name, url = window.location.href) {
     return new URL(url).searchParams.get(name);
 }
 
-// Helper: Generates script info
 function scriptInfo() {
     return `[${scriptData.name} ${scriptData.version}]`;
 }
 
-// Helper: Prints universal debug information
 function initDebug() {
     console.debug(`${scriptInfo()} It works 🚀!`);
     console.debug(`${scriptInfo()} HELP:`, scriptData.helpLink);
@@ -975,7 +957,6 @@ function initDebug() {
     }
 }
 
-// Helper: Text Translator
 function tt(string) {
     var gameLocale = game_data.locale;
 
@@ -986,7 +967,7 @@ function tt(string) {
     }
 }
 
-// Initialize Script
+// Initialize
 (function () {
     if (
         game_data.features.FarmAssistent.active &&
