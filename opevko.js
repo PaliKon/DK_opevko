@@ -115,25 +115,26 @@ async function initClearBarbarianWalls(store) {
             let barbarians = getFABarbarians(faTableRows);
 
             barbarians = barbarians.map((barbarian) => {
-                const unitsToSend = calculateUnitsToSend(store);
-
-                const sourceVillage = getNearestSourceVillage(
-                    barbarian.coord,
-                    ownVillages,
-                    troopCounts,
-                    unitsToSend
-                );
-
-                return {
-                    ...barbarian,
-                    sourceVillageId: sourceVillage ? sourceVillage.id : null,
-                    sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
-                    sourceVillageName: sourceVillage ? sourceVillage.name : '-',
-                    sourceVillageDistance: sourceVillage
-                        ? parseFloat(sourceVillage.distance).toFixed(2)
-                        : '-',
-                };
-            });
+		    const unitsToSend = calculateUnitsToSend(store);
+		
+		    const sourceVillage = getNearestSourceVillage(
+		        barbarian.coord,
+		        ownVillages,
+		        troopCounts,
+		        unitsToSend
+		    );
+		
+		    return {
+		        ...barbarian,
+		        unitsToSend: unitsToSend,
+		        sourceVillageId: sourceVillage ? sourceVillage.id : null,
+		        sourceVillageCoord: sourceVillage ? sourceVillage.coord : '-',
+		        sourceVillageName: sourceVillage ? sourceVillage.name : '-',
+		        sourceVillageDistance: sourceVillage
+		            ? parseFloat(sourceVillage.distance).toFixed(2)
+		            : '-',
+		    };
+		});
 
             const content = prepareContent(barbarians, MAX_BARBARIANS);
             renderUI(content);
