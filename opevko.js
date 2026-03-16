@@ -456,21 +456,22 @@ function buildBarbsTable(villages, maxBarbsToShow) {
         } = village;
 
         const villageUrl = `${game_data.link_base_pure}info_village&id=${villageId}`;
-        const reportUrl = `${game_data.link_base_pure}report&mode=all&view=${reportId}`;
-
-        let commandUrl = 'javascript:void(0);';
-        if (sourceVillageId) {
-            const sitterParam =
-                game_data.player.sitter > 0 ? `&t=${game_data.player.id}` : '';
-
-            commandUrl =
-                `${game_data.link_base_pure}place` +
-                `${sitterParam}` +
-                `&village=${sourceVillageId}` +
-                `&target=${villageId}` +
-                `${unitsToSend}` +
-                `&wall=${wall}`;
-        }
+		const reportUrl = `${game_data.link_base_pure}report&mode=all&view=${reportId}`;
+		
+		let commandUrl = 'javascript:void(0);';
+		if (sourceVillageId) {
+		    const sitterParam =
+		        game_data.player.sitter > 0 ? `&t=${game_data.player.id}` : '';
+		    const [targetX, targetY] = coord.split('|');
+		
+		    commandUrl =
+		        `/game.php?${sitterParam ? sitterParam.substring(1) + '&' : ''}` +
+		        `village=${sourceVillageId}` +
+		        `&screen=place` +
+		        `&x=${targetX}` +
+		        `&y=${targetY}` +
+		        `${unitsToSend}`;
+		}
 
         barbsTable += `
 			<tr>
