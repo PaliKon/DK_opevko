@@ -413,7 +413,7 @@ function saveSettings() {
         };
 
         writeStorage(data, readStorage(DEFAULT_STATE));
-        UI.SuccessMessage(tt('Settings saved!'), 1000);
+        UI.SuccessMessage(tt('Fínsko Achilles uložený!'), 1000);
         initClearBarbarianWalls(readStorage(DEFAULT_STATE));
     });
 }
