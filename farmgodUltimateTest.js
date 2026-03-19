@@ -706,17 +706,17 @@ async function clickSequenceAfterDelay() {
     if (window.FarmGod.state.returnScheduled) return;
     window.FarmGod.state.returnScheduled = true;
 
-    // 1️⃣ delay + klik fg5 test
+    // 1️⃣ delay + klik Ultimate FG
     let delay1 = randomMs(4000, 8000);
     await sleep(delay1);
 
     let links = [...document.querySelectorAll('a')];
-    let fg5 = links.find(a => (a.textContent || '').trim().toLowerCase() === 'fg5 test');
+    let UltimateFG = links.find(a => (a.textContent || '').trim().toLowerCase() === 'Ultimate FG');
 
-    if (fg5) {
-        fg5.click();
+    if (UltimateFG) {
+        UltimatFG.click();
     } else {
-        UI.ErrorMessage('Nenašiel som "fg5 test"');
+        UI.ErrorMessage('Nenašiel som "Ultimate FG"');
         window.FarmGod.state.returnScheduled = false;
         return;
     }
