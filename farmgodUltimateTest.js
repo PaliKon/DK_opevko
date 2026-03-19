@@ -220,6 +220,7 @@ window.FarmGod.Translation = (function() {
                 losses: 'Poslať farmy na dediny so stratami:',
                 limitPoints: 'Iba barbarky do:',
                 findNewBarbs: 'Nájsť nové barbarky',
+                autoStart: 'Auto odoslať po naplánovaní:',
                 button: 'Plánovať farmy'
             },
             table: {
