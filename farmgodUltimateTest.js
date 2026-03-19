@@ -711,10 +711,10 @@ async function clickSequenceAfterDelay() {
     await sleep(delay1);
 
     let links = [...document.querySelectorAll('a')];
-    let UltimateFG = links.find(a => (a.textContent || '').trim().toLowerCase() === 'Ultimate FG');
+    let UltimateFG = links.find(a => (a.textContent || '').trim().toLowerCase() === 'ultimate fg');
 
     if (UltimateFG) {
-        UltimatFG.click();
+        UltimateFG.click();
     } else {
         UI.ErrorMessage('Nenašiel som "Ultimate FG"');
         window.FarmGod.state.returnScheduled = false;
