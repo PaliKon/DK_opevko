@@ -671,20 +671,36 @@ window.FarmGod = window.FarmGod || {};
 window.FarmGod.state = window.FarmGod.state || {};
 window.FarmGod.state.returnScheduled = false;
 
-async function clickFg5TestAfterDelay() {
+async function clickSequenceAfterDelay() {
     if (window.FarmGod.state.returnScheduled) return;
     window.FarmGod.state.returnScheduled = true;
 
-    const delay = randomMs(4000, 8000);
-    await sleep(delay);
+    // 1️⃣ delay + klik fg5 test
+    let delay1 = randomMs(4000, 8000);
+    await sleep(delay1);
 
-    const links = [...document.querySelectorAll('a')];
-    const target = links.find(a => (a.textContent || '').trim().toLowerCase() === 'fg5 test');
+    let links = [...document.querySelectorAll('a')];
+    let fg5 = links.find(a => (a.textContent || '').trim().toLowerCase() === 'fg5 test');
 
-    if (target) {
-        target.click();
+    if (fg5) {
+        fg5.click();
     } else {
-        UI.ErrorMessage('Nenašiel som odkaz "fg5 test".');
+        UI.ErrorMessage('Nenašiel som "fg5 test"');
+        window.FarmGod.state.returnScheduled = false;
+        return;
+    }
+
+    // 2️⃣ delay + klik "Plánovať farmy"
+    let delay2 = randomMs(4000, 8000);
+    await sleep(delay2);
+
+    let buttons = [...document.querySelectorAll('input, button')];
+    let plan = buttons.find(b => (b.value || b.textContent || '').toLowerCase().includes('plánovať'));
+
+    if (plan) {
+        plan.click();
+    } else {
+        UI.ErrorMessage('Nenašiel som tlačidlo "Plánovať farmy"');
     }
 
     window.FarmGod.state.returnScheduled = false;
@@ -703,7 +719,7 @@ async function SHIT() {
 
         if (!button) {
             UI.SuccessMessage(`Finsko Achilles dokončený! Odoslaných: ${sent}`);
-            await clickFg5TestAfterDelay();
+            await clickSequenceAfterDelay();
             break;
         }
 
