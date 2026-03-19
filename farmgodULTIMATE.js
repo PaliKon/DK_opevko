@@ -2,9 +2,11 @@
 // Upravené: text tlačítka "BLITZKRIEG" -> "Fínsko Achilles dobrý a statočný"
 // + odstránené externé načítavanie
 // + opravený stav "farmBusy" tak, aby SHIT() vedel spoľahlivo čakať
+// + pridaná možnosť Auto odoslať po naplánovaní
 
 window.FarmGod = window.FarmGod || {};
 window.FarmGod.state = window.FarmGod.state || { farmBusy: false };
+window.FarmGod.autoStart = false;
 
 window.FarmGod.Library = (function() {
     if (typeof window.twLib === 'undefined') {
@@ -219,6 +221,7 @@ window.FarmGod.Translation = (function() {
                 losses: 'Poslať farmy na dediny so stratami:',
                 limitPoints: 'Iba barbarky do:',
                 findNewBarbs: 'Nájsť nové barbarky',
+                autoStart: 'Auto odoslať po naplánovaní:',
                 button: 'Plánovať farmy'
             },
             table: {
@@ -229,14 +232,14 @@ window.FarmGod.Translation = (function() {
                 fields: 'Vzdialenosť',
                 farm: 'Vzor',
                 goTo: 'Ísť do',
-                // ✅ TU JE TVOJ TEXT:
                 sendAll: 'Fínsko Achilles dobrý a statočný',
                 loading: 'Načítavam...'
             },
             messages: {
                 villageChanged: 'Úspešne zmenená dedina!',
                 villageError: 'Všetky farmy pre súčasnú dedinu boli odoslané!',
-                sendError: 'Error: Farma neposlaná!'
+                sendError: 'Error: Farma neposlaná!',
+                autoStartRunning: 'Automatické odosielanie je zapnuté, spúšťam farmenie...'
             }
         }
     };
@@ -255,7 +258,7 @@ window.FarmGod.Main = (function(Library, Translation) {
 
     const setBusy = (v) => {
         farmBusy = !!v;
-        window.FarmGod.state.farmBusy = farmBusy; // ✅ pre SHIT()
+        window.FarmGod.state.farmBusy = farmBusy;
     };
 
     const init = function() {
@@ -278,11 +281,19 @@ window.FarmGod.Main = (function(Library, Translation) {
                 let optionLimitPoints  = $('.optionLimitPoints').prop('checked');
                 let optionMaxPoints    = parseInt($('.optionMaxPoints').val())   || 87;
                 let optionFindNewBarbs = $('.optionFindNewBarbs').prop('checked');
+                let optionAutoStart    = $('.optionAutoStart').prop('checked');
+
+                window.FarmGod.autoStart = optionAutoStart;
 
                 localStorage.setItem('farmGod_options', JSON.stringify({
-                    optionGroup, optionDistance, optionTime, optionLosses,
-                    limitPoints: optionLimitPoints, maxPoints: optionMaxPoints,
-                    findNewBarbs: optionFindNewBarbs
+                    optionGroup,
+                    optionDistance,
+                    optionTime,
+                    optionLosses,
+                    limitPoints: optionLimitPoints,
+                    maxPoints: optionMaxPoints,
+                    findNewBarbs: optionFindNewBarbs,
+                    autoStart: optionAutoStart
                 }));
 
                 $('.optionTitle').html(t.table.loading);
@@ -297,21 +308,22 @@ window.FarmGod.Main = (function(Library, Translation) {
                     UI.InitProgressBars();
                     UI.updateProgressBar($('#FarmGodProgessbar'), 0, plan.counter);
                     $('#FarmGodProgessbar').data('current', 0).data('max', plan.counter);
-                
-                    if (plan.counter > 0) {
+
+                    if (plan.counter > 0 && window.FarmGod.autoStart) {
                         let tries = 0;
-                        let autoStart = setInterval(() => {
+                        let autoStartInterval = setInterval(() => {
                             tries++;
-                
+
                             const btn = document.querySelector('.farmGodContent input.btn[onclick*="SHIT"]');
                             if (btn && typeof window.SHIT === 'function') {
-                                clearInterval(autoStart);
+                                clearInterval(autoStartInterval);
                                 console.log('Tlačidlo nájdené, spúšťam auto-farmenie...');
+                                UI.SuccessMessage(t.messages.autoStartRunning);
                                 window.SHIT();
                             }
-                
+
                             if (tries > 20) {
-                                clearInterval(autoStart);
+                                clearInterval(autoStartInterval);
                                 console.warn('Autoštart sa nespustil: tlačidlo nebolo nájdené.');
                             }
                         }, 300);
@@ -352,8 +364,11 @@ window.FarmGod.Main = (function(Library, Translation) {
             optionLosses: false,
             limitPoints: true,
             maxPoints: 87,
-            findNewBarbs: true
+            findNewBarbs: true,
+            autoStart: false
         };
+
+        window.FarmGod.autoStart = !!options.autoStart;
 
         return $.when(buildGroupSelect(options.optionGroup)).then((groupSelect) => {
             return `<style>#popup_box_FarmGod{text-align:center;width:580px;}</style>
@@ -367,17 +382,21 @@ window.FarmGod.Main = (function(Library, Translation) {
     <tr><td>${t.options.group}</td><td>${groupSelect}</td></tr>
     <tr><td>${t.options.distance}</td><td><input type="text" size="5" class="optionDistance" value="${options.optionDistance}"></td></tr>
     <tr><td>${t.options.time}</td><td><input type="text" size="5" class="optionTime" value="${options.optionTime}"></td></tr>
-    <tr><td>${t.options.losses}</td><td><input type="checkbox" class="optionLosses" ${options.optionLosses?'checked':''}></td></tr>
+    <tr><td>${t.options.losses}</td><td><input type="checkbox" class="optionLosses" ${options.optionLosses ? 'checked' : ''}></td></tr>
     <tr>
         <td>${t.options.limitPoints}</td>
         <td>
-            <input type="checkbox" class="optionLimitPoints" ${options.limitPoints?'checked':''}>
+            <input type="checkbox" class="optionLimitPoints" ${options.limitPoints ? 'checked' : ''}>
             <input type="number" min="1" class="optionMaxPoints" value="${options.maxPoints}" style="width:80px;"> bodov
         </td>
     </tr>
     <tr>
         <td>${t.options.findNewBarbs}</td>
-        <td><input type="checkbox" class="optionFindNewBarbs" ${options.findNewBarbs?'checked':''}></td>
+        <td><input type="checkbox" class="optionFindNewBarbs" ${options.findNewBarbs ? 'checked' : ''}></td>
+    </tr>
+    <tr>
+        <td>${t.options.autoStart}</td>
+        <td><input type="checkbox" class="optionAutoStart" ${options.autoStart ? 'checked' : ''}></td>
     </tr>
 </table>
 </div><br>
@@ -445,7 +464,7 @@ window.FarmGod.Main = (function(Library, Translation) {
 
                 plan[originCoord].forEach((val, i) => {
                     let pointsDisplay = (val.target.points !== undefined) ? val.target.points.toLocaleString('sk-SK') : '?';
-                    html += `<tr class="farmRow row_${(i%2==0)?'a':'b'}">
+                    html += `<tr class="farmRow row_${(i % 2 == 0) ? 'a' : 'b'}">
                         <td style="text-align:center;"><a href="${game_data.link_base_pure}info_village&id=${val.origin.id}">${val.origin.name} (${val.origin.coord})</a></td>
                         <td style="text-align:center;"><a href="${game_data.link_base_pure}info_village&id=${val.target.id}">Dedina barbarov (${val.target.coord})</a></td>
                         <td style="text-align:center;font-weight:bold;">${pointsDisplay}</td>
