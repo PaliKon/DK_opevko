@@ -5,6 +5,7 @@
 
 window.FarmGod = window.FarmGod || {};
 window.FarmGod.state = window.FarmGod.state || { farmBusy: false };
+window.FarmGod.autoStart = false;
 
 window.FarmGod.Library = (function() {
     if (typeof window.twLib === 'undefined') {
@@ -298,7 +299,7 @@ window.FarmGod.Main = (function(Library, Translation) {
                     UI.updateProgressBar($('#FarmGodProgessbar'), 0, plan.counter);
                     $('#FarmGodProgessbar').data('current', 0).data('max', plan.counter);
                 
-                    if (plan.counter > 0) {
+                    if (plan.counter > 0 && window.FarmGod.autoStart) {
                         let tries = 0;
                         let autoStart = setInterval(() => {
                             tries++;
@@ -307,6 +308,7 @@ window.FarmGod.Main = (function(Library, Translation) {
                             if (btn && typeof window.SHIT === 'function') {
                                 clearInterval(autoStart);
                                 console.log('Tlačidlo nájdené, spúšťam auto-farmenie...');
+                                UI.SuccessMessage(t.messages.autoStartRunning);
                                 window.SHIT();
                             }
                 
