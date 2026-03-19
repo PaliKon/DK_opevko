@@ -763,13 +763,13 @@ async function SHIT() {
         sent++;
         await sleep(225);
 
-        if (document.contains(button)) {
-            button.closest('.farmRow')?.remove();
-
-            const $pb = $('#FarmGodProgessbar');
-            const current = ($pb.data('current') || 0) + 1;
-            $pb.data('current', current);
-            UI.updateProgressBar($pb, current, $pb.data('max'));
-        }
+       // if (document.contains(button)) {
+         //   button.closest('.farmRow')?.remove();
+//
+  //          const $pb = $('#FarmGodProgessbar');
+    //        const current = ($pb.data('current') || 0) + 1;
+      //      $pb.data('current', current);
+        //    UI.updateProgressBar($pb, current, $pb.data('max'));
+       // }
     }
 }
