@@ -297,6 +297,25 @@ window.FarmGod.Main = (function(Library, Translation) {
                     UI.InitProgressBars();
                     UI.updateProgressBar($('#FarmGodProgessbar'), 0, plan.counter);
                     $('#FarmGodProgessbar').data('current', 0).data('max', plan.counter);
+                
+                    if (plan.counter > 0) {
+                        let tries = 0;
+                        let autoStart = setInterval(() => {
+                            tries++;
+                
+                            const btn = document.querySelector('.farmGodContent input.btn[onclick*="SHIT"]');
+                            if (btn && typeof window.SHIT === 'function') {
+                                clearInterval(autoStart);
+                                console.log('Tlačidlo nájdené, spúšťam auto-farmenie...');
+                                window.SHIT();
+                            }
+                
+                            if (tries > 20) {
+                                clearInterval(autoStart);
+                                console.warn('Autoštart sa nespustil: tlačidlo nebolo nájdené.');
+                            }
+                        }, 300);
+                    }
                 }).catch(err => {
                     console.error("Chyba pri plánovaní farmy:", err);
                     UI.ErrorMessage("Nastala chyba pri načítaní/plánovaní dát.");
