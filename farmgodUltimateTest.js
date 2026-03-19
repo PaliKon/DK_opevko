@@ -754,10 +754,10 @@ async function SHIT() {
             break;
         }
 
-        if (window.FarmGod?.state?.farmBusy) {
-            await sleep(400);
-            continue;
-        }
+        //if (window.FarmGod?.state?.farmBusy) {
+           // await sleep(400);
+         //   continue;
+       // }
 
         button.click();
         sent++;
