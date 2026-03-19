@@ -355,7 +355,8 @@ window.FarmGod.Main = (function(Library, Translation) {
             optionLosses: false,
             limitPoints: true,
             maxPoints: 87,
-            findNewBarbs: true
+            findNewBarbs: true,
+            autoStart: false
         };
 
         return $.when(buildGroupSelect(options.optionGroup)).then((groupSelect) => {
@@ -381,6 +382,10 @@ window.FarmGod.Main = (function(Library, Translation) {
     <tr>
         <td>${t.options.findNewBarbs}</td>
         <td><input type="checkbox" class="optionFindNewBarbs" ${options.findNewBarbs?'checked':''}></td>
+    </tr>
+    <tr>
+        <td>${t.options.autoStart}</td>
+        <td><input type="checkbox" class="optionAutoStart" ${options.autoStart ? 'checked' : ''}></td>
     </tr>
 </table>
 </div><br>
