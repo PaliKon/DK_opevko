@@ -281,11 +281,14 @@ window.FarmGod.Main = (function(Library, Translation) {
                 let optionLimitPoints  = $('.optionLimitPoints').prop('checked');
                 let optionMaxPoints    = parseInt($('.optionMaxPoints').val())   || 87;
                 let optionFindNewBarbs = $('.optionFindNewBarbs').prop('checked');
+                let optionAutoStart    = $('.optionAutoStart').prop('checked');
+                
+                window.FarmGod.autoStart = optionAutoStart;
 
                 localStorage.setItem('farmGod_options', JSON.stringify({
                     optionGroup, optionDistance, optionTime, optionLosses,
                     limitPoints: optionLimitPoints, maxPoints: optionMaxPoints,
-                    findNewBarbs: optionFindNewBarbs
+                    findNewBarbs: optionFindNewBarbs,autoStart: optionAutoStart
                 }));
 
                 $('.optionTitle').html(t.table.loading);
