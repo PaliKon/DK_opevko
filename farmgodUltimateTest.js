@@ -663,27 +663,62 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function randomMs(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+window.FarmGod = window.FarmGod || {};
+window.FarmGod.state = window.FarmGod.state || {};
+window.FarmGod.state.returnScheduled = false;
+
+async function clickFg5TestAfterDelay() {
+    if (window.FarmGod.state.returnScheduled) return;
+    window.FarmGod.state.returnScheduled = true;
+
+    const delay = randomMs(4000, 8000);
+    await sleep(delay);
+
+    const links = [...document.querySelectorAll('a')];
+    const target = links.find(a => (a.textContent || '').trim().toLowerCase() === 'fg5 test');
+
+    if (target) {
+        target.click();
+    } else {
+        UI.ErrorMessage('Nenašiel som odkaz "fg5 test".');
+    }
+
+    window.FarmGod.state.returnScheduled = false;
+}
+
 async function SHIT() {
     if (window.FarmGod?.state?.farmBusy) {
         UI.ErrorMessage("Práve sa odosiela útok, čakaj prosím...");
         return;
     }
+
     let sent = 0;
+
     while (true) {
         const button = document.querySelector('.farmGod_icon');
+
         if (!button) {
             UI.SuccessMessage(`Finsko Achilles dokončený! Odoslaných: ${sent}`);
+            await clickFg5TestAfterDelay();
             break;
         }
+
         if (window.FarmGod?.state?.farmBusy) {
             await sleep(400);
             continue;
         }
+
         button.click();
         sent++;
         await sleep(500);
+
         if (document.contains(button)) {
             button.closest('.farmRow')?.remove();
+
             const $pb = $('#FarmGodProgessbar');
             const current = ($pb.data('current') || 0) + 1;
             $pb.data('current', current);
