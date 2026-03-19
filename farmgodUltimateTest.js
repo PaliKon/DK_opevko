@@ -761,7 +761,7 @@ async function SHIT() {
 
         button.click();
         sent++;
-        await sleep(500);
+        await sleep(225);
 
         if (document.contains(button)) {
             button.closest('.farmRow')?.remove();
