@@ -238,7 +238,8 @@ window.FarmGod.Translation = (function() {
             messages: {
                 villageChanged: 'Úspešne zmenená dedina!',
                 villageError: 'Všetky farmy pre súčasnú dedinu boli odoslané!',
-                sendError: 'Error: Farma neposlaná!'
+                sendError: 'Error: Farma neposlaná!',
+                autoStartRunning: 'Automatické odosielanie je zapnuté, spúšťam farmenie...'
             }
         }
     };
