@@ -308,15 +308,26 @@ window.FarmGod.Main = (function(Library, Translation) {
                         let tries = 0;
                         let autoStart = setInterval(() => {
                             tries++;
-                
+                    
                             const btn = document.querySelector('.farmGodContent input.btn[onclick*="SHIT"]');
                             if (btn && typeof window.SHIT === 'function') {
                                 clearInterval(autoStart);
-                                console.log('Tlačidlo nájdené, spúšťam auto-farmenie...');
-                                UI.SuccessMessage(t.messages.autoStartRunning);
-                                window.SHIT();
+                    
+                                const delay = randomMs(6000, 8000); // 6 až 8 sekúnd
+                                console.log(`Tlačidlo nájdené, auto-farmenie sa spustí o ${delay} ms`);
+                                UI.SuccessMessage(`Tabuľka načítaná. Spustím odosielanie za ${Math.round(delay / 1000)} s...`);
+                    
+                                setTimeout(() => {
+                                    const btnAgain = document.querySelector('.farmGodContent input.btn[onclick*="SHIT"]');
+                                    if (btnAgain) {
+                                        btnAgain.click(); // stlačí tlačidlo "Fínsko Achilles dobrý a statočný"
+                                    } else {
+                                        console.warn('Tlačidlo sa po čakaní nenašlo.');
+                                        UI.ErrorMessage('Tlačidlo pre odoslanie útokov sa po čakaní nenašlo.');
+                                    }
+                                }, delay);
                             }
-                
+                    
                             if (tries > 20) {
                                 clearInterval(autoStart);
                                 console.warn('Autoštart sa nespustil: tlačidlo nebolo nájdené.');
@@ -707,7 +718,7 @@ async function clickSequenceAfterDelay() {
     window.FarmGod.state.returnScheduled = true;
 
     // 1️⃣ delay + klik Ultimate FG
-    let delay1 = randomMs(4000, 8000);
+    let delay1 = randomMs(6000, 8000);
     await sleep(delay1);
 
     let links = [...document.querySelectorAll('a')];
@@ -722,7 +733,7 @@ async function clickSequenceAfterDelay() {
     }
 
     // 2️⃣ delay + klik "Plánovať farmy"
-    let delay2 = randomMs(4000, 8000);
+    let delay2 = randomMs(6000, 8000);
     await sleep(delay2);
 
     let buttons = [...document.querySelectorAll('input, button')];
