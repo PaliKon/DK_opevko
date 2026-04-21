@@ -294,8 +294,8 @@ function prepareWindowContent(windowBody) {
             }
             
             .ra-header-logo {
-                max-width: 160px;
-                max-height: 160px;
+                max-width: 80px;
+                max-height: 80px;
                 display: block;
                 border: 1px solid #b89b68;
                 background: #fff8e8;
