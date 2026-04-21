@@ -210,6 +210,7 @@ function init(unitInfo) {
 }
 
 function prepareWindowContent(windowBody) {
+    const serializedUnitInfo = JSON.stringify(unitInfo);
     const windowHeader = `
     <div class="ra-header">
         <div class="ra-header-left">
@@ -320,6 +321,7 @@ function prepareWindowContent(windowBody) {
 
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
+                const plannerUnitInfo = ${serializedUnitInfo};
                 var ownVillagesMap = {};
 
                 function getOpenerGameData() {
@@ -748,7 +750,7 @@ function prepareWindowContent(windowBody) {
                 function get_troop(type) {
                     var unit = '';
                     var unitSpeed = '';
-
+                
                     if (type == 'nobel') {
                         return '[unit]snob[/unit]';
                     } else if (type == 'nuke') {
@@ -756,11 +758,15 @@ function prepareWindowContent(windowBody) {
                     } else if (type == 'support') {
                         unitSpeed = $('#support_unit').val();
                     }
-
-                    Object.entries(window.opener ? window.opener.unitInfo.config : {}).map((currentUnit) => {
+                
+                    if (!plannerUnitInfo || !plannerUnitInfo.config) {
+                        return '[unit]ram[/unit]';
+                    }
+                
+                    Object.entries(plannerUnitInfo.config).forEach((currentUnit) => {
                         if (currentUnit[1].speed === unitSpeed) {
                             unit = '[unit]' + currentUnit[0] + '[/unit]';
-
+                
                             if (type === 'nuke') {
                                 if (currentUnit[0] === 'knight') unit = '[unit]light[/unit]';
                                 if (currentUnit[0] === 'archer') unit = '[unit]axe[/unit]';
@@ -772,8 +778,8 @@ function prepareWindowContent(windowBody) {
                             }
                         }
                     });
-
-                    return unit;
+                
+                    return unit || '[unit]ram[/unit]';
                 }
 
                 async function fetchOwnVillagesMap() {
