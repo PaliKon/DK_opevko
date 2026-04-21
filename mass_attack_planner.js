@@ -294,12 +294,12 @@ function prepareWindowContent(windowBody) {
             }
             
             .ra-header-logo {
-                width: 180px;
-                height: auto;
+                max-width: 160px;
+                max-height: 160px;
                 display: block;
-                border: 2px solid #b89b68;
+                border: 1px solid #b89b68;
                 background: #fff8e8;
-                padding: 4px;
+                padding: 3px;
             }
         </style>
     `;
