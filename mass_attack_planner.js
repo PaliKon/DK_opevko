@@ -1,6 +1,6 @@
 /*
  * Script Name: Mass Attack Planner
- * Version: v1.4.0-custom
+ * Version: v1.5.0-custom
  * Last Updated: 2026-04-21
  * Author: Syleion
  * Author URL: https://www.facebook.com/rado.mike
@@ -10,12 +10,13 @@
  * Custom combined version:
  * - blocked send-time slider
  * - per-target nuke table
+ * - BBCode export with Send links
  * - no external helper dependency
  --------------------------------------------------------------------------------------*/
 
 var scriptData = {
     name: 'Finland Achilles Planner',
-    version: 'v1.4.0-custom',
+    version: 'v1.5.0-custom',
     author: 'Syleion',
     authorUrl: 'https://www.facebook.com/rado.mike',
     helpLink:
@@ -194,7 +195,7 @@ function init(unitInfo) {
 
         <div class="ra-mb15">
             <label for="results">Results</label>
-            <textarea id="results" style="height:160px;"></textarea>
+            <textarea id="results" style="height:220px;"></textarea>
         </div>
     `;
 
@@ -215,7 +216,7 @@ function prepareWindowContent(windowBody) {
             <h1 class="ra-fs18 ra-fw600">${scriptData.name}</h1>
         </div>
         <div class="ra-header-right">
-            <img src="https://raw.githubusercontent.com/PaliKon/DK_opevko/main/spawn_rado_finsko_achilles.jpg" class="ra-header-logo">
+            <img src="https://raw.githubusercontent.com/PaliKon/DK_opevko/main/spawn_rado_finsko_achilles.jpg" class="ra-header-logo" alt="Logo">
         </div>
     </div>
 `;
@@ -284,15 +285,12 @@ function prepareWindowContent(windowBody) {
                 gap: 12px;
                 margin-bottom: 15px;
             }
-            
             .ra-header-left {
                 flex: 1;
             }
-            
             .ra-header-right {
                 flex: 0 0 auto;
             }
-            
             .ra-header-logo {
                 width: 180px;
                 height: auto;
@@ -322,6 +320,27 @@ function prepareWindowContent(windowBody) {
 
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
+                var ownVillagesMap = {};
+
+                function getOpenerGameData() {
+                    if (window.opener && window.opener.game_data) {
+                        return window.opener.game_data;
+                    }
+                    return null;
+                }
+
+                function getSitterParam() {
+                    var openerGameData = getOpenerGameData();
+                    if (
+                        openerGameData &&
+                        openerGameData.player &&
+                        openerGameData.player.sitter > 0
+                    ) {
+                        return 't=' + openerGameData.player.id;
+                    }
+                    return '';
+                }
+
                 function formatSliderHour(value) {
                     return String(value).padStart(2, '0') + ':00';
                 }
@@ -757,6 +776,115 @@ function prepareWindowContent(windowBody) {
                     return unit;
                 }
 
+                async function fetchOwnVillagesMap() {
+                    if (Object.keys(ownVillagesMap).length) {
+                        return ownVillagesMap;
+                    }
+
+                    var openerGameData = getOpenerGameData();
+                    if (!openerGameData) {
+                        throw new Error('Could not access opener game data.');
+                    }
+
+                    var groupId = openerGameData.group_id || 0;
+                    var fetchUrl = openerGameData.link_base_pure + 'groups&ajax=load_villages_from_group';
+                    var sitterParam = getSitterParam();
+
+                    if (sitterParam) {
+                        fetchUrl += '&' + sitterParam;
+                    }
+
+                    try {
+                        var response = await $.post({
+                            url: fetchUrl,
+                            data: { group_id: groupId },
+                            dataType: 'json',
+                            headers: { 'TribalWars-Ajax': 1 },
+                        });
+
+                        var parser = new DOMParser();
+                        var htmlDoc = parser.parseFromString(response.response.html, 'text/html');
+                        var rows = $(htmlDoc).find('#group_table > tbody > tr').not(':eq(0)');
+                        var map = {};
+
+                        rows.each(function () {
+                            var villageLink = $(this).find('td:eq(0) a').first();
+                            var villageId =
+                                villageLink.attr('data-village-id') ||
+                                ((villageLink.attr('href') || '').match(/id=(\\d+)/) || [null, null])[1];
+                            var coord = $(this).find('td:eq(1)').text().trim();
+
+                            if (villageId && coord) {
+                                map[coord] = parseInt(villageId, 10);
+                            }
+                        });
+
+                        ownVillagesMap = map;
+                        return ownVillagesMap;
+                    } catch (error) {
+                        // fallback cez overview combined
+                        try {
+                            var overviewUrl =
+                                openerGameData.link_base_pure +
+                                'overview_villages&mode=combined&group=' +
+                                groupId +
+                                '&page=-1';
+
+                            if (sitterParam) {
+                                overviewUrl += '&' + sitterParam;
+                            }
+
+                            var overviewResponse = await $.get(overviewUrl);
+                            var html = $('<div>').html(overviewResponse);
+                            var map = {};
+
+                            html.find('#combined_table tr.nowrap').each(function () {
+                                var infoVillageLink = $(this).find('td:eq(1) a[href*="screen=info_village&id="]').first();
+                                var href = infoVillageLink.attr('href') || '';
+                                var coordText = $(this).find('td:eq(1)').text() || '';
+
+                                var coordMatch = coordText.match(/([0-9]{1,3}\\|[0-9]{1,3})/);
+                                var idMatch = href.match(/id=(\\d+)/);
+
+                                if (coordMatch && idMatch) {
+                                    map[coordMatch[1]] = parseInt(idMatch[1], 10);
+                                }
+                            });
+
+                            ownVillagesMap = map;
+                            return ownVillagesMap;
+                        } catch (fallbackError) {
+                            throw new Error('Could not fetch own villages map.');
+                        }
+                    }
+                }
+
+                function buildSendUrl(attackerCoord, targetCoord) {
+                    var openerGameData = getOpenerGameData();
+                    if (!openerGameData) return '';
+
+                    var villageId = ownVillagesMap[attackerCoord];
+                    if (!villageId) return '';
+
+                    var targetParts = targetCoord.split('|');
+                    var x = targetParts[0];
+                    var y = targetParts[1];
+
+                    var params = [];
+                    var sitterParam = getSitterParam();
+
+                    if (sitterParam) {
+                        params.push(sitterParam);
+                    }
+
+                    params.push('village=' + villageId);
+                    params.push('screen=place');
+                    params.push('x=' + x);
+                    params.push('y=' + y);
+
+                    return openerGameData.link_base.replace(/amp;/g, '') + 'game.php?' + params.join('&');
+                }
+
                 function get_twcode(plan, land_time) {
                     var twcode = '[size=12][b]Landing time: ' + land_time + '[/b][/size]\\n\\n';
 
@@ -765,12 +893,14 @@ function prepareWindowContent(windowBody) {
                     }
 
                     var colour = '';
+                    twcode += '[table]\\n';
 
                     for (var attack in plan) {
                         if (
-                            plan[attack]['target'] != undefined ||
-                            plan[attack]['travel_time'] != undefined ||
-                            plan[attack]['type'] != undefined
+                            plan[attack]['target'] != undefined &&
+                            plan[attack]['travel_time'] != undefined &&
+                            plan[attack]['type'] != undefined &&
+                            plan[attack]['attacker'] != undefined
                         ) {
                             if (plan[attack]['type'] == 'nobel') colour = '#2eb92e';
                             else if (plan[attack]['type'] == 'nuke') colour = '#ff0e0e';
@@ -778,25 +908,33 @@ function prepareWindowContent(windowBody) {
 
                             var launch_time = new Date(plan[attack]['travel_time']);
                             var formattedDate = formatDateTime(launch_time);
+                            var sendUrl = buildSendUrl(plan[attack]['attacker'], plan[attack]['target']);
+                            var sendButton = sendUrl
+                                ? '[url=' + sendUrl + ']Send[/url]'
+                                : '[color=#999]NoLink[/color]';
 
                             twcode +=
+                                '[*]' +
                                 get_troop(plan[attack]['type']) +
-                                ' - ' +
+                                ' [|] ' +
                                 plan[attack]['attacker'] +
-                                ' - ' +
+                                ' -> ' +
                                 plan[attack]['target'] +
-                                ' - [b][color=' +
+                                ' [|][b][color=' +
                                 colour +
                                 ']' +
                                 formattedDate +
-                                '[/color][/b]\\n';
+                                '[/color][/b][|]' +
+                                sendButton +
+                                '[|]\\n';
                         }
                     }
 
+                    twcode += '[/table]';
                     return twcode;
                 }
 
-                function handleSubmit() {
+                async function handleSubmit() {
                     try {
                         var arrival_time = $('#arrival_time').val();
 
@@ -815,6 +953,8 @@ function prepareWindowContent(windowBody) {
                                 return;
                             }
                         }
+
+                        await fetchOwnVillagesMap();
 
                         var nuke_speed = parseFloat($('#nuke_unit').val());
                         var support_speed = parseFloat($('#support_unit').val());
