@@ -203,7 +203,7 @@ function prepareWindowContent(windowBody) {
 				}
 
 				loadJS('https://code.jquery.com/jquery-3.6.0.min.js', function() {
-					loadJS('https://twscripts.dev/scripts/attackPlannerHelper.js', function() {
+					loadJS('https://palikon.github.io/DK_opevko/attack_planner_helper.js', function() {
 						console.log('Helper libraries loaded!');
 					});
 				});
