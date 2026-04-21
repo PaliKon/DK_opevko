@@ -27,7 +27,7 @@ if (typeof DEBUG !== 'boolean') DEBUG = false;
 var LS_PREFIX = `ra_massAttackPlanner_`;
 var TIME_INTERVAL = 60 * 60 * 1000 * 24 * 30;
 var LAST_UPDATED_TIME = parseInt(
-    localStorage.getItem(`${LS_PREFIX}_last_updated`) || '0',
+    localStorage.getItem(`${LS_PREFIX}_last_updated`) || '0',.ra
     10
 );
 
@@ -294,12 +294,12 @@ function prepareWindowContent(windowBody) {
             }
             
             .ra-header-logo {
-                max-width: 80px;
-                max-height: 80px;
+                width: 180px;
+                height: auto;
                 display: block;
-                border: 1px solid #b89b68;
+                border: 2px solid #b89b68;
                 background: #fff8e8;
-                padding: 3px;
+                padding: 4px;
             }
         </style>
     `;
