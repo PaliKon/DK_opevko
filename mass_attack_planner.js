@@ -14,7 +14,7 @@
  --------------------------------------------------------------------------------------*/
 
 var scriptData = {
-    name: 'Mass Attack Planner',
+    name: 'Finland Achilles Planner',
     version: 'v1.4.0-custom',
     author: 'Syleion',
     authorUrl: 'https://www.facebook.com/rado.mike',
