@@ -866,29 +866,26 @@ function prepareWindowContent(windowBody) {
                 }
 
                 function buildSendUrl(attackerCoord, targetCoord) {
-                    var openerGameData = getOpenerGameData();
-                    if (!openerGameData) return '';
-
                     var villageId = ownVillagesMap[attackerCoord];
                     if (!villageId) return '';
-
+                
                     var targetParts = targetCoord.split('|');
                     var x = targetParts[0];
                     var y = targetParts[1];
-
-                    var params = [];
+                
                     var sitterParam = getSitterParam();
-
+                    var params = [];
+                
                     if (sitterParam) {
                         params.push(sitterParam);
                     }
-
+                
                     params.push('village=' + villageId);
                     params.push('screen=place');
                     params.push('x=' + x);
                     params.push('y=' + y);
-
-                    return openerGameData.link_base.replace(/amp;/g, '') + 'game.php?' + params.join('&');
+                
+                    return window.location.origin + '/game.php?' + params.join('&');
                 }
 
                 function get_twcode(plan, land_time) {
