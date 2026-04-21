@@ -1,6 +1,6 @@
 /*
  * Script Name: Mass Attack Planner
- * Version: v1.2.0-custom
+ * Version: v1.3.0-custom
  * Last Updated: 2026-04-21
  * Author: RedAlert + custom edit
  * Author URL: https://twscripts.dev/
@@ -16,7 +16,7 @@
 
 var scriptData = {
     name: 'Mass Attack Planner',
-    version: 'v1.2.0-custom',
+    version: 'v1.3.0-custom',
     author: 'RedAlert',
     authorUrl: 'https://twscripts.dev/',
     helpLink:
@@ -67,133 +67,149 @@ function init(unitInfo) {
     }
 
     const content = `
-            <div class="ra-mb15">
-                <label for="arrival_time">Arrival Time</label>
-                <input id="arrival_time" type="text" placeholder="yyyy-mm-dd hh:mm:ss" value="${currentDateTime}">
-            </div>
+        <div class="ra-mb15">
+            <label for="arrival_time">Arrival Time</label>
+            <input id="arrival_time" type="text" placeholder="yyyy-mm-dd hh:mm:ss" value="${currentDateTime}">
+        </div>
 
-            <div class="ra-box ra-mb15">
-                <label class="ra-inline-label">
-                    <input id="exclude_blocked_attacks" type="checkbox">
-                    Ignore attacks that must be sent during blocked hours
-                </label>
+        <div class="ra-box ra-mb15">
+            <label class="ra-inline-label">
+                <input id="exclude_blocked_attacks" type="checkbox">
+                Ignore attacks that must be sent during blocked hours
+            </label>
 
-                <div id="blocked_time_wrap" class="ra-mt10" style="display:none;">
-                    <div class="ra-flex ra-gap10">
-                        <div class="ra-flex-6">
-                            <label for="blocked_from_slider">Blocked from</label>
-                            <input id="blocked_from_slider" type="range" min="0" max="23" step="1" value="0">
-                            <div class="ra-slider-value">
-                                <span id="blocked_from_value">00:00</span>
-                            </div>
-                        </div>
-                        <div class="ra-flex-6">
-                            <label for="blocked_to_slider">Blocked until</label>
-                            <input id="blocked_to_slider" type="range" min="0" max="23" step="1" value="8">
-                            <div class="ra-slider-value">
-                                <span id="blocked_to_value">08:00</span>
-                            </div>
-                        </div>
+            <div id="blocked_time_wrap" class="ra-mt10" style="display:none;">
+                <div class="ra-flex ra-gap10">
+                    <div class="ra-flex-6">
+                        <label for="blocked_from_slider">Blocked from</label>
+                        <input id="blocked_from_slider" type="range" min="0" max="23" step="1" value="0">
+                        <div class="ra-slider-value"><span id="blocked_from_value">00:00</span></div>
                     </div>
-
-                    <input type="hidden" id="blocked_from" value="00:00">
-                    <input type="hidden" id="blocked_to" value="08:00">
-
-                    <small>
-                        Example: 00:00 → 08:00 or 01:00 → 09:00.  
-                        Intervals crossing midnight also work, e.g. 23:00 → 06:00.
-                    </small>
-                </div>
-            </div>
-
-            <input type="hidden" id="nobleSpeed" value="${unitInfo.config['snob'].speed}" />
-
-            <div class="ra-flex">
-                <div class="ra-flex-6">
-                    <div class="ra-mb15">
-                        <label for="nuke_unit">Slowest Nuke unit</label>
-                        <select id="nuke_unit">
-                            <option value="${unitInfo.config['axe'].speed}">Axe</option>
-                            <option value="${unitInfo.config['light'].speed}">LC/MA/Paladin</option>
-                            <option value="${unitInfo.config['heavy'].speed}">HC</option>
-                            <option value="${unitInfo.config['ram'].speed}" selected="selected">Ram/Cat</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="ra-flex-6">
-                    <div class="ra-mb15">
-                        <label for="support_unit">Slowest Support unit</label>
-                        <select id="support_unit">
-                            <option value="${unitInfo.config['spear'].speed}">Spear/Archer</option>
-                            <option value="${unitInfo.config['sword'].speed}" selected="selected">Sword</option>
-                            <option value="${unitInfo.config['spy'].speed}">Spy</option>
-                            ${
-                                worldUnits.includes('knight')
-                                    ? `<option value="${knightSpeed}" data-option-unit="knight">Paladin</option>`
-                                    : ''
-                            }
-                            <option value="${unitInfo.config['heavy'].speed}">HC</option>
-                            <option value="${unitInfo.config['catapult'].speed}">Cat</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ra-mb15">
-                <label for="target_coords">Targets Coords</label>
-                <textarea id="target_coords"></textarea>
-            </div>
-
-            <div class="ra-flex">
-                <div class="ra-flex-4">
-                    <div class="ra-mb15">
-                        <label for="nobel_coords">Nobles Coords</label>
-                        <textarea id="nobel_coords"></textarea>
-                    </div>
-                    <div class="ra-mb15">
-                        <label for="nobel_count">Nobles per Target</label>
-                        <input id="nobel_count" type="text" value="1">
+                    <div class="ra-flex-6">
+                        <label for="blocked_to_slider">Blocked until</label>
+                        <input id="blocked_to_slider" type="range" min="0" max="23" step="1" value="8">
+                        <div class="ra-slider-value"><span id="blocked_to_value">08:00</span></div>
                     </div>
                 </div>
 
-                <div class="ra-flex-4">
-                    <div class="ra-mb15">
-                        <label for="nuke_coords">Nukes Coords</label>
-                        <textarea id="nuke_coords"></textarea>
-                    </div>
-                    <div class="ra-mb15">
-                        <label for="nuke_count">Nukes per Target</label>
-                        <input id="nuke_count" type="text" value="1">
-                    </div>
+                <input type="hidden" id="blocked_from" value="00:00">
+                <input type="hidden" id="blocked_to" value="08:00">
+
+                <small>
+                    Example: 00:00 → 08:00 or 01:00 → 09:00. Intervals crossing midnight also work, e.g. 23:00 → 06:00.
+                </small>
+            </div>
+        </div>
+
+        <input type="hidden" id="nobleSpeed" value="${unitInfo.config['snob'].speed}" />
+
+        <div class="ra-flex">
+            <div class="ra-flex-6">
+                <div class="ra-mb15">
+                    <label for="nuke_unit">Slowest Nuke unit</label>
+                    <select id="nuke_unit">
+                        <option value="${unitInfo.config['axe'].speed}">Axe</option>
+                        <option value="${unitInfo.config['light'].speed}">LC/MA/Paladin</option>
+                        <option value="${unitInfo.config['heavy'].speed}">HC</option>
+                        <option value="${unitInfo.config['ram'].speed}" selected="selected">Ram/Cat</option>
+                    </select>
                 </div>
+            </div>
 
-                <div class="ra-flex-4">
-                    <div class="ra-mb15">
-                        <label for="support_coords">Support Coords</label>
-                        <textarea id="support_coords"></textarea>
-                    </div>
-                    <div class="ra-mb15">
-                        <label for="support_count">Support per Target</label>
-                        <input id="support_count" type="text" value="1">
-                    </div>
+            <div class="ra-flex-6">
+                <div class="ra-mb15">
+                    <label for="support_unit">Slowest Support unit</label>
+                    <select id="support_unit">
+                        <option value="${unitInfo.config['spear'].speed}">Spear/Archer</option>
+                        <option value="${unitInfo.config['sword'].speed}" selected="selected">Sword</option>
+                        <option value="${unitInfo.config['spy'].speed}">Spy</option>
+                        ${
+                            worldUnits.includes('knight')
+                                ? `<option value="${knightSpeed}" data-option-unit="knight">Paladin</option>`
+                                : ''
+                        }
+                        <option value="${unitInfo.config['heavy'].speed}">HC</option>
+                        <option value="${unitInfo.config['catapult'].speed}">Cat</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="ra-mb15">
+            <label for="target_coords">Targets Coords</label>
+            <textarea id="target_coords"></textarea>
+            <small>Paste one target coordinate per line. Then click "Build Target Table".</small>
+        </div>
+
+        <div class="ra-mb15 ra-flex ra-gap10">
+            <a id="build_target_table_btn" class="button" onclick="buildTargetTable();">Build Target Table</a>
+            <a id="clear_target_table_btn" class="button button-alt" onclick="clearTargetTable();">Clear Table</a>
+        </div>
+
+        <div id="target_table_wrap" class="ra-mb15" style="display:none;">
+            <label>Per-target nuke settings</label>
+            <div class="ra-box">
+                <small class="ra-mb10">
+                    For each target, enter:
+                    <strong>number</strong> = custom nukes,
+                    <strong>G</strong> = use global "Nukes per Target",
+                    empty = also use global.
+                </small>
+                <div id="target_table_container"></div>
+            </div>
+        </div>
+
+        <div class="ra-flex">
+            <div class="ra-flex-4">
+                <div class="ra-mb15">
+                    <label for="nobel_coords">Nobles Coords</label>
+                    <textarea id="nobel_coords"></textarea>
+                </div>
+                <div class="ra-mb15">
+                    <label for="nobel_count">Nobles per Target</label>
+                    <input id="nobel_count" type="text" value="1">
                 </div>
             </div>
 
-            <div class="ra-mb15">
-                <a id="submit_btn" class="button" onClick="handleSubmit();">Get Plan!</a>
+            <div class="ra-flex-4">
+                <div class="ra-mb15">
+                    <label for="nuke_coords">Nukes Coords</label>
+                    <textarea id="nuke_coords"></textarea>
+                </div>
+                <div class="ra-mb15">
+                    <label for="nuke_count">Nukes per Target</label>
+                    <input id="nuke_count" type="text" value="1">
+                    <small>Used as global fallback and for targets marked with G.</small>
+                </div>
             </div>
 
-            <div class="ra-mb15">
-                <label for="results">Results</label>
-                <textarea id="results"></textarea>
+            <div class="ra-flex-4">
+                <div class="ra-mb15">
+                    <label for="support_coords">Support Coords</label>
+                    <textarea id="support_coords"></textarea>
+                </div>
+                <div class="ra-mb15">
+                    <label for="support_count">Support per Target</label>
+                    <input id="support_count" type="text" value="1">
+                </div>
             </div>
-        `;
+        </div>
+
+        <div class="ra-mb15">
+            <a id="submit_btn" class="button" onClick="handleSubmit();">Get Plan!</a>
+        </div>
+
+        <div class="ra-mb15">
+            <label for="results">Results</label>
+            <textarea id="results"></textarea>
+        </div>
+    `;
 
     const windowContent = prepareWindowContent(content);
     attackPlannerWindow = window.open(
         '',
         '',
-        'left=10px,top=10px,width=520,height=760,toolbar=0,resizable=1,location=0,menubar=0,scrollbars=1,status=0'
+        'left=10px,top=10px,width=620,height=860,toolbar=0,resizable=1,location=0,menubar=0,scrollbars=1,status=0'
     );
     attackPlannerWindow.document.write(windowContent);
     attackPlannerWindow.document.close();
@@ -203,6 +219,7 @@ function init(unitInfo) {
 function prepareWindowContent(windowBody) {
     const windowHeader = `<h1 class="ra-fs18 ra-fw600">${scriptData.name}</h1>`;
     const windowFooter = `<small><strong>${scriptData.name} ${scriptData.version}</strong> - <a href="${scriptData.authorUrl}" target="_blank" rel="noreferrer noopener">${scriptData.author}</a> - <a href="${scriptData.helpLink}" target="_blank" rel="noreferrer noopener">Help</a></small>`;
+
     const windowStyle = `
         <style>
             body {
@@ -212,21 +229,46 @@ function prepareWindowContent(windowBody) {
                 line-height: 1.3;
                 color: #2f1b00;
                 margin: 0;
-                padding: 15px;
+                padding: 10px;
                 box-sizing: border-box;
             }
+
             * { box-sizing: border-box; }
-            main { max-width: 768px; margin: 0 auto; }
-            h1 { font-size: 27px; margin: 0 0 15px; }
-            a { font-weight: 700; text-decoration: none; color: #603000; }
-            small { font-size: 10px; line-height: 1.4; display: block; }
+
+            main {
+                max-width: 900px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: 26px;
+                margin: 0 0 15px;
+            }
+
+            a {
+                font-weight: 700;
+                text-decoration: none;
+                color: #603000;
+            }
+
+            small {
+                font-size: 11px;
+                line-height: 1.4;
+                display: block;
+            }
+
+            label {
+                font-weight: 600;
+                display: block;
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
 
             input[type="text"],
             select,
             textarea {
                 display: block;
                 width: 100%;
-                height: auto;
                 box-sizing: border-box;
                 padding: 5px;
                 outline: none;
@@ -248,11 +290,10 @@ function prepareWindowContent(windowBody) {
                 margin: 8px 0 4px;
             }
 
-            label {
-                font-weight: 600;
-                display: block;
-                margin-bottom: 5px;
-                font-size: 12px;
+            textarea {
+                width: 100%;
+                height: 80px;
+                resize: none;
             }
 
             .ra-inline-label {
@@ -266,25 +307,6 @@ function prepareWindowContent(windowBody) {
             .ra-inline-label input[type="checkbox"] {
                 margin: 0;
             }
-
-            textarea {
-                width: 100%;
-                height: 80px;
-                resize: none;
-            }
-
-            .ra-mb15 { margin-bottom: 15px; }
-            .ra-mt10 { margin-top: 10px; }
-            .ra-gap10 { gap: 10px; }
-
-            .ra-flex {
-                display: flex;
-                flex-flow: row wrap;
-                justify-content: space-between;
-            }
-
-            .ra-flex-6 { flex: 0 0 48%; }
-            .ra-flex-4 { flex: 0 0 31%; }
 
             .ra-box {
                 border: 1px solid #b89b68;
@@ -300,6 +322,20 @@ function prepareWindowContent(windowBody) {
                 margin-top: 4px;
             }
 
+            .ra-mb10 { margin-bottom: 10px; }
+            .ra-mb15 { margin-bottom: 15px; }
+            .ra-mt10 { margin-top: 10px; }
+            .ra-gap10 { gap: 10px; }
+
+            .ra-flex {
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-between;
+            }
+
+            .ra-flex-6 { flex: 0 0 48%; }
+            .ra-flex-4 { flex: 0 0 31.5%; }
+
             .button {
                 padding: 10px 20px;
                 background-color: #603000;
@@ -311,7 +347,57 @@ function prepareWindowContent(windowBody) {
                 text-transform: uppercase;
             }
 
-            @media (max-width: 500px) {
+            .button-alt {
+                background-color: #8b6b3e;
+            }
+
+            .ra-table-wrap {
+                max-height: 260px;
+                overflow-y: auto;
+                border: 1px solid #b89b68;
+                background: #f9f3e0;
+            }
+
+            .ra-table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+            }
+
+            .ra-table th,
+            .ra-table td {
+                border: 1px solid #c9b182;
+                padding: 6px;
+                text-align: left;
+                vertical-align: middle;
+                font-size: 12px;
+                background: rgba(255,255,255,0.45);
+            }
+
+            .ra-table th {
+                background: #e6d3a4;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+            .ra-target-count-input {
+                width: 80px !important;
+                text-align: center;
+                font-weight: 700;
+            }
+
+            .ra-target-coord {
+                font-weight: 700;
+                letter-spacing: 0.2px;
+            }
+
+            .ra-note {
+                font-size: 11px;
+                color: #5a3d11;
+            }
+
+            @media (max-width: 600px) {
                 .ra-flex-6,
                 .ra-flex-4 {
                     flex: 0 0 100%;
@@ -366,7 +452,6 @@ function prepareWindowContent(windowBody) {
 
                     fromValue.textContent = fromFormatted;
                     toValue.textContent = toFormatted;
-
                     fromHidden.value = fromFormatted;
                     toHidden.value = toFormatted;
                 }
@@ -398,9 +483,76 @@ function prepareWindowContent(windowBody) {
                     syncBlockedRangeUI();
                 }
 
-                loadJS('https://code.jquery.com/jquery-3.6.0.min.js', function() {
-                    loadJS('https://palikon.github.io/DK_opevko/attack_planner_helper.js', function() {
-                        console.log('Helper libraries loaded!');
+                function getUniqueTargetCoords() {
+                    var raw = document.getElementById('target_coords').value || '';
+                    var matches = raw.match(/[0-9]{1,3}\\|[0-9]{1,3}/g) || [];
+                    var unique = [];
+                    var seen = {};
+
+                    for (var i = 0; i < matches.length; i++) {
+                        if (!seen[matches[i]]) {
+                            seen[matches[i]] = true;
+                            unique.push(matches[i]);
+                        }
+                    }
+
+                    return unique;
+                }
+
+                function buildTargetTable() {
+                    var targets = getUniqueTargetCoords();
+                    var container = document.getElementById('target_table_container');
+                    var wrap = document.getElementById('target_table_wrap');
+
+                    if (!container || !wrap) return;
+
+                    if (!targets.length) {
+                        container.innerHTML = '<div class="ra-note">No valid target coordinates found.</div>';
+                        wrap.style.display = 'block';
+                        return;
+                    }
+
+                    var existingValues = {};
+                    var oldInputs = document.querySelectorAll('.ra-target-count-input');
+                    oldInputs.forEach(function(input) {
+                        var coord = input.getAttribute('data-target');
+                        existingValues[coord] = input.value;
+                    });
+
+                    var html = '';
+                    html += '<div class="ra-table-wrap">';
+                    html += '<table class="ra-table">';
+                    html += '<thead><tr><th style="width:70%;">Target</th><th style="width:30%;">Nukes</th></tr></thead>';
+                    html += '<tbody>';
+
+                    for (var i = 0; i < targets.length; i++) {
+                        var coord = targets[i];
+                        var currentValue = typeof existingValues[coord] !== 'undefined' ? existingValues[coord] : 'G';
+
+                        html += '<tr>';
+                        html += '<td><span class="ra-target-coord">' + coord + '</span></td>';
+                        html += '<td><input type="text" class="ra-target-count-input" data-target="' + coord + '" value="' + currentValue + '" placeholder="G"></td>';
+                        html += '</tr>';
+                    }
+
+                    html += '</tbody></table>';
+                    html += '</div>';
+
+                    container.innerHTML = html;
+                    wrap.style.display = 'block';
+                }
+
+                function clearTargetTable() {
+                    var container = document.getElementById('target_table_container');
+                    var wrap = document.getElementById('target_table_wrap');
+
+                    if (container) container.innerHTML = '';
+                    if (wrap) wrap.style.display = 'none';
+                }
+
+                loadJS('https://code.jquery.com/jquery-3.6.0.min.js', function () {
+                    loadJS('https://YOUR-HOSTED-URL/attackPlannerHelper.js', function () {
+                        console.log('Attack planner helper loaded!');
                         initBlockedTimeUI();
                     });
                 });
