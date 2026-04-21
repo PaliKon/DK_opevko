@@ -215,7 +215,7 @@ function prepareWindowContent(windowBody) {
             <h1 class="ra-fs18 ra-fw600">${scriptData.name}</h1>
         </div>
         <div class="ra-header-right">
-            <img src="https://raw.githubusercontent.com/DK_opevko/spawn_rado_finsko_achilles.jpg" class="ra-header-logo">
+            <img src="https://raw.githubusercontent.com/DK_opevko/main/spawn_rado_finsko_achilles.jpg" class="ra-header-logo">
         </div>
     </div>
 `;
