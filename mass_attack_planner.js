@@ -2,8 +2,8 @@
  * Script Name: Mass Attack Planner
  * Version: v1.4.0-custom
  * Last Updated: 2026-04-21
- * Author: RedAlert + custom edit
- * Author URL: https://twscripts.dev/
+ * Author: Syleion
+ * Author URL: https://www.facebook.com/rado.mike
  */
 
 /*--------------------------------------------------------------------------------------
@@ -16,8 +16,8 @@
 var scriptData = {
     name: 'Mass Attack Planner',
     version: 'v1.4.0-custom',
-    author: 'RedAlert',
-    authorUrl: 'https://twscripts.dev/',
+    author: 'Syleion',
+    authorUrl: 'https://www.facebook.com/rado.mike',
     helpLink:
         'https://forum.tribalwars.net/index.php?threads/mass-attack-planner.285331/',
 };
@@ -209,7 +209,16 @@ function init(unitInfo) {
 }
 
 function prepareWindowContent(windowBody) {
-    const windowHeader = `<h1 class="ra-fs18 ra-fw600">${scriptData.name}</h1>`;
+    const windowHeader = `
+    <div class="ra-header">
+        <div class="ra-header-left">
+            <h1 class="ra-fs18 ra-fw600">${scriptData.name}</h1>
+        </div>
+        <div class="ra-header-right">
+            <img src="https://raw.githubusercontent.com/DK_opevko/tw-scripts/main/spawn_rado_finsko_achilles.jpg" class="ra-header-logo">
+        </div>
+    </div>
+`;
     const windowFooter = `<small><strong>${scriptData.name} ${scriptData.version}</strong> - <a href="${scriptData.authorUrl}" target="_blank" rel="noreferrer noopener">${scriptData.author}</a> - <a href="${scriptData.helpLink}" target="_blank" rel="noreferrer noopener">Help</a></small>`;
 
     const windowStyle = `
@@ -267,6 +276,30 @@ function prepareWindowContent(windowBody) {
             .ra-note { font-size: 11px; color: #5a3d11; }
             @media (max-width: 600px) {
                 .ra-flex-6, .ra-flex-4 { flex: 0 0 100%; }
+            }
+            .ra-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .ra-header-left {
+                flex: 1;
+            }
+            
+            .ra-header-right {
+                flex: 0 0 auto;
+            }
+            
+            .ra-header-logo {
+                max-width: 80px;
+                max-height: 80px;
+                display: block;
+                border: 1px solid #b89b68;
+                background: #fff8e8;
+                padding: 3px;
             }
         </style>
     `;
