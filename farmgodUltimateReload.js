@@ -713,6 +713,36 @@ window.FarmGod = window.FarmGod || {};
 window.FarmGod.state = window.FarmGod.state || {};
 window.FarmGod.state.returnScheduled = false;
 
+function isVisible(el) {
+    if (!el) return false;
+    const s = getComputedStyle(el);
+    return (
+        s.display !== 'none' &&
+        s.visibility !== 'hidden' &&
+        s.opacity !== '0' &&
+        el.getClientRects().length > 0
+    );
+}
+
+function hasCaptcha() {
+    const container = document.querySelector('#botprotection_quest.quest');
+
+    if (container && isVisible(container)) {
+        location.reload();
+        return true;
+    }
+
+    const btn = Array.from(document.querySelectorAll('a.btn.btn-default, button.btn.btn-default'))
+        .find(el => (el.textContent || '').trim().includes('Spustiť kontrolu proti botom'));
+
+    if (btn && isVisible(btn)) {
+        location.reload();
+        return true;
+    }
+
+    return false;
+}
+
 async function clickSequenceAfterDelay() {
     if (window.FarmGod.state.returnScheduled) return;
     window.FarmGod.state.returnScheduled = true;
@@ -757,6 +787,16 @@ async function SHIT() {
     let sent = 0;
 
     while (true) {
+        if (window.FarmGod?.state?.captchaDetected) {
+            location.reload();
+            break;
+        }
+        
+        if (hasCaptcha()) {
+            break;
+        }
+    
+        
         const button = document.querySelector('.farmGod_icon');
 
         if (!button) {
